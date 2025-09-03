@@ -1,0 +1,31 @@
+{
+  "name": "qvim-electron-demo",
+  "version": "1.0.0",
+  "description": "Imitune Demo App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win"
+  },
+  "keywords": [],
+  "author": "Your Name",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^22.0.0",
+    "electron-builder": "^23.6.0"
+  },
+  "dependencies": {
+    "onnxruntime-node": "^1.13.1"
+  },
+  "build": {
+    "appId": "com.imitune.app",
+    "productName": "Imitune",
+    "mac": {
+      "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "target": "nsis"
+    }
+  }
+}
