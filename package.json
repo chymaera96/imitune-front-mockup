@@ -21,6 +21,10 @@
   "build": {
     "appId": "com.imitune.app",
     "productName": "Imitune",
+    "asarUnpack": ["models/**"],
+    "extraResources": [
+      { "from": "models", "to": "models" }
+    ],
     "mac": {
       "category": "public.app-category.developer-tools"
     },
