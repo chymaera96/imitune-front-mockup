@@ -34,7 +34,7 @@ class InferenceWrapper(torch.nn.Module):
             n_fft=cfg.n_fft,
             freqm=0, timem=0,
             fmin=cfg.fmin, fmax=cfg.fmax,
-            fmin_aug_range=0, fmax_aug_range=0
+            fmin_aug_range=1, fmax_aug_range=1
         )
         # encoder
         self.encoder = get_mobilenet(
