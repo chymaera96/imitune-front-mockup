@@ -15,9 +15,9 @@ import torch
 import torch.nn.functional as F
 
 # import modules from the training repo (installed via pip install git+https://github.com/chymaera96/QBV2025.git@triplet-mn)
-from qvim_mbn_multi.utils import NAME_TO_WIDTH
-from qvim_mbn_multi.mn.preprocess import AugmentMelSTFT
-from qvim_mbn_multi.mn.model import get_model as get_mobilenet
+from qvim_mn_baseline.mn.preprocess import AugmentMelSTFT
+from qvim_mn_baseline.mn.model import get_model as get_mobilenet
+from qvim_mn_baseline.utils import NAME_TO_WIDTH
 
 
 class InferenceWrapper(torch.nn.Module):
