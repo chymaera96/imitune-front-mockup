@@ -7,7 +7,8 @@ import pandas as pd
 from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader
 
-from qvim_mn_baseline.ex_qvim import QVIMModule
+# from qvim_mn_baseline.ex_qvim import QVIMModule
+from tools.export_onnx import InferenceWrapper
 from qvim_mn_baseline.utils import NAME_TO_WIDTH
 
 
@@ -58,31 +59,30 @@ def extract_embeddings(model, dataloader, device):
 
 
 
-def load_model_from_ckpt(ckpt_path, config_args):
-    model = QVIMModule(config_args)
+def load_inference_model(ckpt_path, cfg, device):
     ckpt = torch.load(ckpt_path, map_location='cpu')
-    model.load_state_dict(ckpt['state_dict'], strict=False)
+    # most PL ckpts store weights under 'state_dict'
+    state_dict = ckpt.get('state_dict', ckpt)
+    model = InferenceWrapper(cfg, state_dict)
+    model.to(device)
+    model.eval()
     return model
 
 
-def get_dummy_config(pretrained_name, sample_rate=32000, duration=10.0):
+def get_infer_config(pretrained_name, sample_rate=32000, duration=10.0):
     from types import SimpleNamespace
     return SimpleNamespace(
-        n_mels=128,
-        sr=sample_rate,
-        win_length=800,
+        # names expected by InferenceWrapper
+        sample_rate=sample_rate,
+        window_size=800,
         hop_size=320,
         n_fft=1024,
-        freqm=2,
-        timem=200,
+        n_mels=128,
         fmin=0,
         fmax=None,
-        fmin_aug_range=10,
-        fmax_aug_range=2000,
         pretrained_name=pretrained_name,
-        initial_tau=0.07,
-        tau_trainable=False,
-        margin=0.2
+        # also keep duration around for dataset construction
+        duration=duration
     )
 
 
@@ -97,17 +97,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Setup
-    config = get_dummy_config(pretrained_name=args.pretrained_name)
-    dataset = AudioDataset(
-        audio_dirs=args.audio_dirs,
-        sample_rate=config.sr,
-        duration=config.duration
-    )
+    config = get_infer_config(pretrained_name=args.pretrained_name, sample_rate=32000, duration=10.0)
+    dataset = AudioDataset(audio_dirs=args.audio_dirs, sample_rate=config.sample_rate, duration=config.duration)
 
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = load_model_from_ckpt(args.checkpoint, config)
+    model = load_inference_model(args.checkpoint, config, device)
 
     # Extract embeddings
     embeddings, filepaths = extract_embeddings(model, dataloader, device)
@@ -119,3 +115,5 @@ if __name__ == "__main__":
 
     print(f"Saved embeddings to {args.output_npy}")
     print(f"Saved metadata to {args.output_metadata}")
+
+
