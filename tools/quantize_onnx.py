@@ -12,7 +12,10 @@ quantize_dynamic(
 )
 print("Wrote quantized model to models/qvim.int8.onnx")
 
-# import numpy as np, onnxruntime as ort
+
+so = ort.SessionOptions()
+so.intra_op_num_threads = 4   # pick a sensible number for your machine
+so.inter_op_num_threads = 1
 
 sess_fp32 = ort.InferenceSession("models/qvim.onnx", providers=["CPUExecutionProvider"])
 sess_int8 = ort.InferenceSession("models/qvim.int8.onnx", providers=["CPUExecutionProvider"])
