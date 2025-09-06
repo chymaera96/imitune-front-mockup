@@ -7,7 +7,8 @@ quantize_dynamic(
     model_input="models/qvim.onnx",
     model_output="models/qvim.int8.onnx",
     weight_type=QuantType.QInt8,   # use 8-bit signed
-    per_channel=True               # (optional) finer quantization granularity
+    per_channel=True,              # (optional) finer quantization granularity
+    op_types_to_quantize=["MatMul","Gemm"]  # <- avoid convs
 )
 print("Wrote quantized model to models/qvim.int8.onnx")
 
