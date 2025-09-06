@@ -12,14 +12,14 @@ quantize_dynamic(
 )
 print("Wrote quantized model to models/qvim.int8.onnx")
 
-sess_fp32 = ort.InferenceSession("models/qvim.onnx")
-sess_int8 = ort.InferenceSession("models/qvim.int8.onnx")
+# import numpy as np, onnxruntime as ort
 
-x = np.random.randn(1, 32000*10).astype("float32")  # 10s waveform
-out_fp32 = sess_fp32.run(None, {"waveform": x})[0]
-out_int8 = sess_int8.run(None, {"waveform": x})[0]
+sess_fp32 = ort.InferenceSession("models/qvim.onnx", providers=["CPUExecutionProvider"])
+sess_int8 = ort.InferenceSession("models/qvim.int8.onnx", providers=["CPUExecutionProvider"])
 
-cos = np.dot(out_fp32.flatten(), out_int8.flatten()) / (
-    np.linalg.norm(out_fp32.flatten())*np.linalg.norm(out_int8.flatten()) + 1e-12
-)
-print("Cosine similarity:", cos)
+x = np.random.randn(1, 32000*10).astype("float32")
+y0 = sess_fp32.run(None, {"waveform": x})[0]
+y1 = sess_int8.run(None, {"waveform": x})[0]
+
+cos = (y0.flatten() @ y1.flatten()) / (np.linalg.norm(y0)*np.linalg.norm(y1) + 1e-12)
+print("cosine similarity:", cos)
