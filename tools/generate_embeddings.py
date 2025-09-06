@@ -7,7 +7,7 @@ import pandas as pd
 from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader
 
-from ex_qvim import QVIMModule
+from qvim_mbn_multi.ex_qvim import QVIMModule
 from qvim_mbn_multi.utils import NAME_TO_WIDTH
 
 
