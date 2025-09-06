@@ -51,7 +51,7 @@ def extract_embeddings(model, dataloader, device):
     with torch.no_grad():
         for audio_batch, batch_paths in tqdm(dataloader, desc="Extracting embeddings"):
             audio_batch = audio_batch.to(device)
-            output = model.forward_pass(audio_batch)
+            output = model.forward(audio_batch)
             embeddings.append(output.cpu().numpy())
             filepaths.extend(batch_paths)
 
