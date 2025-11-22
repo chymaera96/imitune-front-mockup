@@ -5,6 +5,7 @@ import librosa
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import glob
 from torch.utils.data import Dataset, DataLoader
 
 # from qvim_mn_baseline.ex_qvim import QVIMModule
@@ -19,10 +20,13 @@ class AudioDataset(Dataset):
         self.fixed_length = int(sample_rate * duration)
         self.filepaths = []
 
-        for audio_dir in audio_dirs:
-            for fname in os.listdir(audio_dir):
-                if fname.endswith(".wav") or fname.endswith(".mp3"):
-                    self.filepaths.append(os.path.join(audio_dir, fname))
+        # for audio_dir in audio_dirs:
+        #     for fname in os.listdir(audio_dir):
+        #         if fname.endswith(".wav") or fname.endswith(".mp3"):
+        #             self.filepaths.append(os.path.join(audio_dir, fname))
+        for fpath in glob.glob(os.path.join(*audio_dirs, '**', '*.*'), recursive=True):
+            if fpath.lower().endswith(('.wav', '.mp3', '.flac', '.ogg', '.m4a')):
+                self.filepaths.append(fpath)
 
     def __len__(self):
         return len(self.filepaths)
