@@ -56,8 +56,8 @@ class InferenceWrapper(torch.nn.Module):
             out = out[1]  # (cls, emb) -> emb
 
         if out.dim() == 3 and out.shape[0] == 1:
-            out = out.squeeze(0)   # (B, 960)
-            
+            out = out.reshape(out.shape[-2], out.shape[-1])
+
         return F.normalize(out, dim=1)
 
 
