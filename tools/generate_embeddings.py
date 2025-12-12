@@ -9,7 +9,7 @@ import glob
 from torch.utils.data import Dataset, DataLoader
 
 # from qvim_mn_baseline.ex_qvim import QVIMModule
-from tools.export_onnx import InferenceWrapper
+from .export_onnx import InferenceWrapper
 from qvim_mn_baseline.utils import NAME_TO_WIDTH
 
 
