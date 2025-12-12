@@ -61,6 +61,30 @@ def extract_embeddings(model, dataloader, device):
 
     return np.concatenate(embeddings), filepaths
 
+def extract_embeddings_onnx(session, dataloader):
+    input_name = session.get_inputs()[0].name
+    output_name = session.get_outputs()[0].name
+
+    embeddings = []
+    filepaths = []
+
+    for audio_batch, batch_paths in tqdm(dataloader, desc="Extracting ONNX embeddings"):
+        # audio_batch: (B, T) torch tensor → numpy
+        audio_np = audio_batch.numpy().astype(np.float32)
+
+        # If your ONNX model expects (B, 1, T), uncomment:
+        # audio_np = audio_np[:, None, :]
+
+        outputs = session.run(
+            [output_name],
+            {input_name: audio_np},
+        )[0]  # (B, embedding_dim)
+
+        embeddings.append(outputs)
+        filepaths.extend(batch_paths)
+
+    embeddings = np.concatenate(embeddings, axis=0)
+    return embeddings, filepaths
 
 
 def load_inference_model(ckpt_path, cfg, device):
@@ -95,6 +119,7 @@ if __name__ == "__main__":
     parser.add_argument("--audio_dirs", nargs='+', required=True, help="List of directories with audio files")
     parser.add_argument("--checkpoint", type=str, required=True, help="Path to pretrained .ckpt file")
     parser.add_argument("--pretrained_name", type=str, default="mn10_as", help="Width multiplier name for MobileNet")
+    parser.add_argument("--onnx_model", type=str, help="Path to ONNX model (ONNX mode)")
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--output_npy", type=str, default="fsd50k_embeddings.npy")
     parser.add_argument("--output_metadata", type=str, default="fsd50k_metadata.csv")
@@ -106,18 +131,44 @@ if __name__ == "__main__":
 
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = load_inference_model(args.checkpoint, config, device)
 
-    # Extract embeddings
-    embeddings, filepaths = extract_embeddings(model, dataloader, device)
+    # -------------------------
+    # Choose backend
+    # -------------------------
+    if args.onnx_model is not None:
+        import onnxruntime as ort
 
+        providers = [
+            ("CUDAExecutionProvider", {"device_id": 0}),
+            "CPUExecutionProvider",
+        ]
 
-    # Save
+        session = ort.InferenceSession(
+            args.onnx_model,
+            providers=providers,
+        )
+
+        embeddings, filepaths = extract_embeddings_onnx(session, dataloader)
+
+    else:
+        if args.checkpoint is None:
+            raise ValueError("Either --checkpoint or --onnx_model must be provided")
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model = load_inference_model(args.checkpoint, config, device)
+
+        embeddings, filepaths = extract_embeddings(model, dataloader, device)
+
+    # -------------------------
+    # Save outputs
+    # -------------------------
     np.save(args.output_npy, embeddings)
-    pd.DataFrame({'filepath': filepaths}).to_csv(args.output_metadata, index=False)
+    pd.DataFrame({"filepath": filepaths}).to_csv(
+        args.output_metadata, index=False
+    )
 
     print(f"Saved embeddings to {args.output_npy}")
+    print(f"Saved metadata to {args.output_metadata}")
     print(f"Saved metadata to {args.output_metadata}")
 
 
