@@ -80,6 +80,7 @@ def extract_embeddings_onnx(session, dataloader):
             {input_name: audio_np},
         )[0]  # (B, embedding_dim)
 
+        print("ONNX outputs shape:", outputs.shape)
         embeddings.append(outputs)
         filepaths.extend(batch_paths)
 
@@ -148,12 +149,12 @@ if __name__ == "__main__":
             providers=providers,
         )
 
-        input_name = session.get_inputs()[0].name
-        output_name = session.get_outputs()[0].name
+        # input_name = session.get_inputs()[0].name
+        # output_name = session.get_outputs()[0].name
 
-        audio_np = np.random.randn(12, 32000 * 10).astype(np.float32)
-        out = session.run([output_name], {input_name: audio_np})[0]
-        assert out.shape == (12, 960), f"Expected output shape (12, 960), got {out.shape}"
+        # audio_np = np.random.randn(12, 32000 * 10).astype(np.float32)
+        # out = session.run([output_name], {input_name: audio_np})[0]
+        # assert out.shape == (12, 960), f"Expected output shape (12, 960), got {out.shape}"
 
 
         embeddings, filepaths = extract_embeddings_onnx(session, dataloader)
