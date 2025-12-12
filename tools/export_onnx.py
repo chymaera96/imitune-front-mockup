@@ -48,36 +48,15 @@ class InferenceWrapper(torch.nn.Module):
         if unexpected:
             print("Warning: unexpected keys:", unexpected)
 
-    # def forward(self, x):
-    #     # x: (B, T) waveform @ sample_rate
-    #     mel = self.mel(x).unsqueeze(1)  # (B,1,n_mels,frames)
-    #     out = self.encoder(mel)
-    #     if isinstance(out, tuple):
-    #         out = out[1]  # (cls, emb) -> emb
-    #     return F.normalize(out, dim=1)
-
     def forward(self, x):
-        print("input x:", x.shape)  # (B, T)
-
-        mel = self.mel(x)
-        print("mel:", mel.shape)    # (B, n_mels, time)
-
-        mel = mel.unsqueeze(1)
-        print("mel unsqueezed:", mel.shape)  # (B, 1, n_mels, time)
-
+        # x: (B, T) waveform @ sample_rate
+        mel = self.mel(x).unsqueeze(1)  # (B,1,n_mels,frames)
         out = self.encoder(mel)
-        print("encoder raw out type:", type(out))
-
         if isinstance(out, tuple):
-            print("encoder tuple shapes:", [o.shape for o in out])
-            out = out[1]
+            out = out[1]  # (cls, emb) -> emb
+        return F.normalize(out, dim=1)
 
-        print("encoder out:", out.shape)
 
-        out = F.normalize(out, dim=1)
-        print("normalized out:", out.shape)
-
-        return out
 
 
 

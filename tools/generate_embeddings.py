@@ -45,47 +45,50 @@ class AudioDataset(Dataset):
 
 
 
-def extract_embeddings(model, dataloader, device):
+def extract_embeddings(model, dataloader, device, emb_memmap):
     model.eval()
     model.to(device)
 
-    embeddings = []
+    offset = 0
     filepaths = []
 
     with torch.no_grad():
         for audio_batch, batch_paths in tqdm(dataloader, desc="Extracting embeddings"):
             audio_batch = audio_batch.to(device)
-            output = model.forward(audio_batch)
-            embeddings.append(output.cpu().numpy())
+
+            output = model(audio_batch)              # (B, 960)
+            output = output.cpu().numpy().astype(np.float32)
+
+            B = output.shape[0]
+            emb_memmap[offset : offset + B] = output
+            offset += B
+
             filepaths.extend(batch_paths)
 
-    return np.concatenate(embeddings), filepaths
+    emb_memmap.flush()
+    return filepaths
 
-def extract_embeddings_onnx(session, dataloader):
+def extract_embeddings_onnx(session, dataloader, emb_memmap):
     input_name = session.get_inputs()[0].name
     output_name = session.get_outputs()[0].name
 
-    embeddings = []
+    offset = 0
     filepaths = []
 
     for audio_batch, batch_paths in tqdm(dataloader, desc="Extracting ONNX embeddings"):
-        # audio_batch: (B, T) torch tensor → numpy
         audio_np = audio_batch.numpy().astype(np.float32)
+        outputs = session.run([output_name], {input_name: audio_np})[0]
 
-        # If your ONNX model expects (B, 1, T), uncomment:
-        # audio_np = audio_np[:, None, :]
+        if outputs.ndim == 3 and outputs.shape[0] == 1:
+            outputs = outputs[0]  # (B,960)
 
-        outputs = session.run(
-            [output_name],
-            {input_name: audio_np},
-        )[0]  # (B, embedding_dim)
-
-        print("ONNX outputs shape:", outputs.shape)
-        embeddings.append(outputs)
+        B = outputs.shape[0]
+        emb_memmap[offset : offset + B] = outputs
+        offset += B
         filepaths.extend(batch_paths)
 
-    embeddings = np.concatenate(embeddings, axis=0)
-    return embeddings, filepaths
+    emb_memmap.flush()
+    return filepaths
 
 
 def load_inference_model(ckpt_path, cfg, device):
@@ -132,6 +135,14 @@ if __name__ == "__main__":
 
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
 
+    emb_dim = 960
+    emb_memmap = np.memmap(
+        args.output_npy,
+        dtype='float32',
+        mode='w+',
+        shape=(len(dataset), emb_dim) 
+    )
+
 
     # -------------------------
     # Choose backend
@@ -157,7 +168,7 @@ if __name__ == "__main__":
         # assert out.shape == (12, 960), f"Expected output shape (12, 960), got {out.shape}"
 
 
-        embeddings, filepaths = extract_embeddings_onnx(session, dataloader)
+        filepaths = extract_embeddings_onnx(session, dataloader, emb_memmap)
 
     else:
         if args.checkpoint is None:
@@ -169,12 +180,11 @@ if __name__ == "__main__":
         # assert model(torch.randn(16, config.sample_rate * config.duration)).shape[0] == 16, \
         #     f"Model forward pass failed. Expected batch size 16 output, got {model(torch.randn(16, config.sample_rate * config.duration)).shape[0]}."  
 
-        embeddings, filepaths = extract_embeddings(model, dataloader, device)
+        filepaths = extract_embeddings(model, dataloader, device, emb_memmap)
 
     # -------------------------
     # Save outputs
     # -------------------------
-    np.save(args.output_npy, embeddings)
     pd.DataFrame({"filepath": filepaths}).to_csv(
         args.output_metadata, index=False
     )
