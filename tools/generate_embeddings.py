@@ -117,7 +117,7 @@ def get_infer_config(pretrained_name, sample_rate=32000, duration=10.0):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--audio_dirs", nargs='+', required=True, help="List of directories with audio files")
-    parser.add_argument("--checkpoint", type=str, required=True, help="Path to pretrained .ckpt file")
+    parser.add_argument("--checkpoint", type=str, help="Path to pretrained .ckpt file")
     parser.add_argument("--pretrained_name", type=str, default="mn10_as", help="Width multiplier name for MobileNet")
     parser.add_argument("--onnx_model", type=str, help="Path to ONNX model (ONNX mode)")
     parser.add_argument("--batch_size", type=int, default=16)
