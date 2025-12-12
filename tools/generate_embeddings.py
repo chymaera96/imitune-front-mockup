@@ -78,7 +78,7 @@ def extract_embeddings_onnx(session, dataloader):
         outputs = session.run(
             [output_name],
             {input_name: audio_np},
-        )[0]  # (B, embedding_dim)
+        )  # (B, embedding_dim)
 
         print("ONNX outputs shape:", outputs.shape)
         embeddings.append(outputs)
