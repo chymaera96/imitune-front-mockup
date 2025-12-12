@@ -148,6 +148,14 @@ if __name__ == "__main__":
             providers=providers,
         )
 
+        input_name = session.get_inputs()[0].name
+        output_name = session.get_outputs()[0].name
+
+        audio_np = np.random.randn(12, 32000 * 10).astype(np.float32)
+        out = session.run([output_name], {input_name: audio_np})[0]
+        assert out.shape == (12, 960), f"Expected output shape (12, 960), got {out.shape}"
+
+
         embeddings, filepaths = extract_embeddings_onnx(session, dataloader)
 
     else:
@@ -156,6 +164,9 @@ if __name__ == "__main__":
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = load_inference_model(args.checkpoint, config, device)
+
+        # assert model(torch.randn(16, config.sample_rate * config.duration)).shape[0] == 16, \
+        #     f"Model forward pass failed. Expected batch size 16 output, got {model(torch.randn(16, config.sample_rate * config.duration)).shape[0]}."  
 
         embeddings, filepaths = extract_embeddings(model, dataloader, device)
 
