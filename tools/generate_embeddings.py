@@ -151,6 +151,9 @@ if __name__ == "__main__":
     if args.onnx_model is not None:
         import onnxruntime as ort
 
+        so = ort.SessionOptions()
+        so.log_severity_level = 3  # suppress info/warnings
+        
         providers = [
             ("CUDAExecutionProvider", {"device_id": 0}),
             "CPUExecutionProvider",
