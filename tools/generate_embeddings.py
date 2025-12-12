@@ -82,6 +82,7 @@ def extract_embeddings_onnx(session, dataloader, emb_memmap):
         if outputs.ndim == 3 and outputs.shape[0] == 1:
             outputs = outputs[0]  # (B,960)
 
+        assert outputs.ndim == 2, f"Expected output ndim 2, got {outputs.ndim}"
         B = outputs.shape[0]
         emb_memmap[offset : offset + B] = outputs
         offset += B
