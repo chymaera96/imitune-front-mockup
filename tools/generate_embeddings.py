@@ -56,8 +56,12 @@ class AudioDataset(Dataset):
         # -------------------------
         self.filepaths = []
 
-        for fname, tags in tag_metadata.items():
-            # Skip if any excluded tag is present
+        for fname, tags in tqdm(
+            tag_metadata.items(),
+            desc="Filtering audio (tags + duration)",
+            total=len(tag_metadata),
+        ):
+            # Exclude by tags
             if any(tag in exclude_tags for tag in tags):
                 continue
 
@@ -65,7 +69,7 @@ class AudioDataset(Dataset):
             if fpath is None:
                 continue
 
-            # Skip if duration > max_duration_sec
+            # Exclude by duration
             try:
                 dur = librosa.get_duration(path=fpath)
             except Exception:
@@ -75,6 +79,7 @@ class AudioDataset(Dataset):
                 continue
 
             self.filepaths.append(fpath)
+
 
         print(f"[AudioDataset] Using {len(self.filepaths)} valid audio files")
 
