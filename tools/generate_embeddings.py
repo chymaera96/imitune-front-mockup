@@ -197,8 +197,9 @@ if __name__ == "__main__":
     parser.add_argument("--pretrained_name", type=str, default="mn10_as")
     parser.add_argument("--batch_size", type=int, default=128)
 
-    parser.add_argument("--output_npy", type=str, default="laion_fsd_excluded_embeddings.npy")
-    parser.add_argument("--output_metadata", type=str, default="metadata.csv")
+    parser.add_argument("--output_npy", type=str, default="/data/scratch/acw723/laion_fsd_excluded_embeddings.npy")
+    parser.add_argument("--output_metadata", type=str, default="laion_fsd_excluded_metadata.csv")
+    parser.add_argument("--freesound_meta_csv", type=str, required=True, default="../freesound_meta.csv")
 
     args = parser.parse_args()
 
@@ -268,13 +269,47 @@ if __name__ == "__main__":
             emb_memmap,
         )
 
-    # -------------------------
-    # Save metadata
-    # -------------------------
-    pd.DataFrame({"filepath": filepaths}).to_csv(
-        args.output_metadata,
-        index=False,
-    )
+# ============================================================
+# Post-extraction metadata join
+# ============================================================
 
-    print(f"Saved embeddings to {args.output_npy}")
-    print(f"Saved metadata to {args.output_metadata}")
+print("Loading freesound metadata...")
+fs_meta = pd.read_csv(args.freesound_meta_csv)
+
+# Build lookup: audio_filename -> freesound_url
+fs_lookup = dict(
+    zip(fs_meta["audio_filename"], fs_meta["freesound_url"])
+)
+
+output_rows = []
+missing = 0
+
+for fp in filepaths:
+    # Normalize path
+    fp_norm = os.path.normpath(fp)
+    parts = fp_norm.split(os.sep)
+
+    if len(parts) < 2:
+        missing += 1
+        continue
+
+    parent_dir = parts[-2]          # train / test
+    filename = parts[-1]             # filename.flac
+    key = f"{parent_dir}/{filename}"
+
+    freesound_url = fs_lookup.get(key)
+
+    if freesound_url is None:
+        missing += 1
+
+    output_rows.append({
+        "filepath": fp,
+        "freesound_url": freesound_url,
+    })
+
+df_out = pd.DataFrame(output_rows)
+
+df_out.to_csv(args.output_metadata, index=False)
+
+print(f"Saved metadata to {args.output_metadata}")
+print(f"Missing freesound_url for {missing} / {len(filepaths)} files")
