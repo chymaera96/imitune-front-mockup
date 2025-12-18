@@ -37,7 +37,8 @@ class AudioDataset(Dataset):
             tag_metadata = json.load(f)
 
         with open(exclude_tag_list_path, "r") as f:
-            exclude_tags = set(json.load(f))
+           exclude_tags = set(line.strip() for line in f if line.strip())
+
 
         audio_dirs = [os.path.abspath(d) for d in audio_dirs]
 
@@ -187,16 +188,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--audio_dirs", nargs="+", required=True)
-    parser.add_argument("--tag_metadata", type=str, required=True)
-    parser.add_argument("--exclude_tag_list", type=str, required=True)
+    parser.add_argument("--tag_metadata", type=str, required=True, default="../tag_metadata.json")
+    parser.add_argument("--exclude_tag_list", type=str, required=True, default="../exclude_tag_list.txt")
 
     parser.add_argument("--checkpoint", type=str)
-    parser.add_argument("--onnx_model", type=str)
+    parser.add_argument("--onnx_model", type=str, default="../models/qvim.onnx")
 
     parser.add_argument("--pretrained_name", type=str, default="mn10_as")
-    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--batch_size", type=int, default=128)
 
-    parser.add_argument("--output_npy", type=str, default="embeddings.npy")
+    parser.add_argument("--output_npy", type=str, default="laion_fsd_excluded_embeddings.npy")
     parser.add_argument("--output_metadata", type=str, default="metadata.csv")
 
     args = parser.parse_args()
