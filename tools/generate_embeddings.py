@@ -188,8 +188,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--audio_dirs", nargs="+", required=True)
-    parser.add_argument("--tag_metadata", type=str, required=True, default="../tag_metadata.json")
-    parser.add_argument("--exclude_tag_list", type=str, required=True, default="../exclude_tag_list.txt")
+    parser.add_argument("--tag_metadata", type=str, default="../tag_metadata.json")
+    parser.add_argument("--exclude_tag_list", type=str, default="../exclude_tag_list.txt")
 
     parser.add_argument("--checkpoint", type=str)
     parser.add_argument("--onnx_model", type=str, default="../models/qvim.onnx")
@@ -199,7 +199,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--output_npy", type=str, default="/data/scratch/acw723/laion_fsd_excluded_embeddings.npy")
     parser.add_argument("--output_metadata", type=str, default="laion_fsd_excluded_metadata.csv")
-    parser.add_argument("--freesound_meta_csv", type=str, required=True, default="../freesound_meta.csv")
+    parser.add_argument("--freesound_meta_csv", type=str, default="../freesound_meta.csv")
 
     args = parser.parse_args()
 
