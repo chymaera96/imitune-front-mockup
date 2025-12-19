@@ -219,7 +219,7 @@ if __name__ == "__main__":
         tag_metadata_path=args.tag_metadata,
         exclude_tag_list_path=args.exclude_tag_list,
         sample_rate=config.sample_rate,
-        max_duration_sec=30.0,
+        max_duration_sec=20.0,
         duration=config.duration,
     )
 
