@@ -5,6 +5,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
 import random
+import json
 
 # ------------------------------------------------------------
 # URL check logic
@@ -49,9 +50,15 @@ def check_with_retry(url, retries=2, sleep_sec=1):
 def main(args):
     df = pd.read_csv(args.input_csv)
 
-    # Drop missing URLs
+    # Preserve original embedding indices
+    df["embedding_index"] = df.index
+
+    # Drop missing URLs (these are automatically invalid)
     df = df.dropna(subset=["freesound_url"])
     df = df[df["freesound_url"].str.strip() != ""]
+    
+    # Reset index after filtering
+    df = df.reset_index(drop=True)
 
     urls = df["freesound_url"].tolist()
 
@@ -69,23 +76,36 @@ def main(args):
             i = futures[future]
             try:
                 valid_mask[i] = future.result()
-            except Exception:
+            except Exception as e:
                 valid_mask[i] = False
+                print(f"Error checking URL at index {i}: {e}")
 
             if (idx + 1) % args.log_every == 0:
                 print(f"Checked {idx + 1}/{len(urls)} URLs")
 
-            # Global rate limiting
-            # time.sleep(args.sleep)
-            time.sleep(random.uniform(args.sleep / 2.0, args.sleep * 2.0))
+    # Split valid / invalid using boolean indexing
+    df_valid = df[valid_mask].copy()
+    df_invalid = df[[not v for v in valid_mask]].copy()
 
-    df_valid = df.loc[valid_mask]
+    # Save valid rows
+    df_valid[["filepath", "freesound_url"]].to_csv(
+        args.output_csv,
+        index=False,
+    )
 
-    df_valid.to_csv(args.output_csv, index=False)
+    # Save deleted embedding indices as JSON
+    deleted_indices_path = args.output_csv.replace(".csv", "_deleted_indices.json")
+
+    deleted_indices = df_invalid["embedding_index"].tolist()
+
+    with open(deleted_indices_path, "w") as f:
+        json.dump(deleted_indices, f)
 
     print("Done.")
     print(f"Valid URLs: {len(df_valid)} / {len(df)}")
-    print(f"Saved to: {args.output_csv}")
+    print(f"Saved valid URLs to: {args.output_csv}")
+    print(f"Saved deleted embedding indices to: {deleted_indices_path}")
+
 
 
 # ------------------------------------------------------------
